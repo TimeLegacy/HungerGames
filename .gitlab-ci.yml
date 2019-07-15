@@ -1,0 +1,28 @@
+image: maven:3-jdk-8
+
+variables:
+  MAVEN_CLI_OPTS: "-s ci-settings.xml --batch-mode"
+
+stages:
+  - build
+  - package
+
+build:
+  tags:
+    - build
+  stage: build
+  script:
+    - mvn $MAVEN_CLI_OPTS clean install compile
+
+package:
+  tags:
+    - package
+  stage: package
+  script:
+    - mvn $MAVEN_CLI_OPTS clean package -Dmaven.test.skip=true
+  artifacts:
+    name: "TLMinigame"
+    paths:
+      - target/*.jar
+  only:
+    - master

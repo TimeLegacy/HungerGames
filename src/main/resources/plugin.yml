@@ -1,0 +1,6 @@
+name: TLHungerGames
+version: 1.0
+main: net.timelegacy.tlhungergames.TLHungerGames
+author: Nyarrth
+depend: [TLCore, TLMinigame]
+api-version: 1.13
