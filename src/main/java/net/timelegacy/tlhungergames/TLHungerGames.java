@@ -1,11 +1,9 @@
 package net.timelegacy.tlhungergames;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-
 import net.timelegacy.tlcore.handler.CoinHandler;
 import net.timelegacy.tlcore.utils.MessageUtils;
 import net.timelegacy.tlminigame.events.GameEndEvent;
@@ -13,8 +11,8 @@ import net.timelegacy.tlminigame.events.GameStartEvent;
 import net.timelegacy.tlminigame.map.Map;
 import net.timelegacy.tlminigame.match.GameHandler;
 import net.timelegacy.tlminigame.match.GameState;
-import net.timelegacy.tlminigame.playerstate.PlayersTeam;
-import net.timelegacy.tlminigame.playerstate.SpectatorsTeam;
+import net.timelegacy.tlminigame.playerstate.PlayerTeam;
+import net.timelegacy.tlminigame.playerstate.SpectatorTeam;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -44,22 +42,20 @@ public class TLHungerGames extends JavaPlugin implements Listener {
 
     // Maps
 
-    GameHandler.maps.add(new Map("Highway", Map.spawns("highway")));
-    GameHandler.maps.add(new Map("Highway", Map.spawns("highway")));
-
-    GameHandler.getRandomMap();
-    GameHandler.loadMap(GameHandler.currentMap.getWorldName());
+    Map.addMap(new Map("Highway"));
+    Map.getRandomMap();
+    GameHandler.loadMap(Map.getCurrentMap().getWorldName());
   }
 
   @EventHandler
   public void onGameStart(GameStartEvent e) {
-    Map currentMap = GameHandler.currentMap;
+    Map currentMap = Map.getCurrentMap();
 
     int count = 0;
-    for (Player p : PlayersTeam.getPlayers()) {
+    for (Player p : PlayerTeam.getPlayers()) {
       Location spawn = new Location(Bukkit.getWorld(currentMap.getWorldName()),
-          currentMap.getSpawns().get(count).getX(), currentMap.getSpawns().get(count).getY(),
-          currentMap.getSpawns().get(count).getZ());
+          currentMap.spawns().get(count).getX(), currentMap.spawns().get(count).getY(),
+          currentMap.spawns().get(count).getZ());
 
       Location center = new Location(Bukkit.getWorld(currentMap.getWorldName()), currentMap.getCenter().getX(),
           currentMap.getCenter().getY(), currentMap.getCenter().getZ());
@@ -151,9 +147,9 @@ public class TLHungerGames extends JavaPlugin implements Listener {
           }
 
           // debug spectator
-          PlayersTeam
+          PlayerTeam
               .removePlayer(p);
-          SpectatorsTeam.addSpectator(p);
+          SpectatorTeam.addSpectator(p);
 
  	                        /*if (sgc.getMinigame().loseCoins > 1) {
  	                            TitleManager.sendTitle(p, 20, 20, 30, "§cYou died!",
@@ -175,11 +171,11 @@ public class TLHungerGames extends JavaPlugin implements Listener {
           //Game.getInstance().core.statsHandler.addDeath(p);
           //Game.getInstance().core.statsHandler.addLoss(p);
 
- 	                        if (PlayersTeam.getPlayers().size() == 1) {
- 	                            GameHandler.finish(PlayersTeam.getPlayers().get(0).getName());
+          if (PlayerTeam.getPlayers().size() == 1) {
+            GameHandler.finish(PlayerTeam.getPlayers().get(0).getName());
 
  	                        } else {
- 	                            Bukkit.broadcastMessage(MessageUtils.colorize(MessageUtils.MAIN_COLOR + PlayersTeam.getPlayers()
+            Bukkit.broadcastMessage(MessageUtils.colorize(MessageUtils.MAIN_COLOR + PlayerTeam.getPlayers()
                                   .size() + MessageUtils.SECOND_COLOR + " players remain!"));
  	                        }
         }
@@ -207,8 +203,8 @@ public class TLHungerGames extends JavaPlugin implements Listener {
     //Game.getInstance().core.statsHandler.addWin(winner);
     //Game.getInstance().core.coinHandler.addCoins(winner.getName(), 20);
 
-    PlayersTeam.removePlayer(winner);
-    SpectatorsTeam.addSpectator(winner);
+    PlayerTeam.removePlayer(winner);
+    SpectatorTeam.addSpectator(winner);
 
     winner.getInventory().clear();
     winner.getActivePotionEffects().clear();
@@ -223,7 +219,7 @@ public class TLHungerGames extends JavaPlugin implements Listener {
 
     //Bukkit.broadcastMessage("playing:" + (Game.players.isPlaying(p)) + " state:" + (Game.gameHandler.getState() == GameState.INGAME) + " action:" + (e.getAction() == Action.RIGHT_CLICK_BLOCK) + " block:" + (e.getClickedBlock().getType() == Material.CHEST));
 
-    if ((PlayersTeam.isPlaying(p)) && (GameHandler.getState() == GameState.INGAME)
+    if ((PlayerTeam.isPlaying(p)) && (GameHandler.getState() == GameState.INGAME)
         && (e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.CHEST)) {
       Block chest = e.getClickedBlock().getLocation().getBlock();
       e.setCancelled(false);
