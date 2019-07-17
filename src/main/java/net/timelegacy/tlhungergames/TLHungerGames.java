@@ -1,310 +1,121 @@
 package net.timelegacy.tlhungergames;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
-import net.timelegacy.tlcore.handler.CoinHandler;
-import net.timelegacy.tlcore.utils.MessageUtils;
-import net.timelegacy.tlminigame.events.GameEndEvent;
-import net.timelegacy.tlminigame.events.GameStartEvent;
-import net.timelegacy.tlminigame.map.Map;
-import net.timelegacy.tlminigame.match.GameHandler;
-import net.timelegacy.tlminigame.match.GameState;
-import net.timelegacy.tlminigame.playerstate.PlayerTeam;
-import net.timelegacy.tlminigame.playerstate.SpectatorTeam;
+import net.timelegacy.tlhungergames.events.ChestListener;
+import net.timelegacy.tlhungergames.events.GameListener;
+import net.timelegacy.tlminigame.enums.GameStatus;
+import net.timelegacy.tlminigame.game.Arena;
+import net.timelegacy.tlminigame.game.ArenaSettings;
+import net.timelegacy.tlminigame.game.Game;
+import net.timelegacy.tlminigame.game.GameSettings;
+import net.timelegacy.tlminigame.manager.GameManager;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
+import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
 
 public class TLHungerGames extends JavaPlugin implements Listener {
 
+  private static TLHungerGames plugin;
+
+  public static List<Location> spawns(String configName) {
+    File dataFile = new File(plugin.getDataFolder(), configName + ".yml");
+    YamlConfiguration config = null;
+
+    if (!dataFile.exists()) {
+      try {
+        if (!dataFile.getParentFile().exists()) {
+          dataFile.getParentFile().mkdirs();
+        }
+        dataFile.createNewFile();
+        config = YamlConfiguration.loadConfiguration(dataFile);
+        config.set("spawnCount", 0);
+        config.set("worldName", configName);
+        config.save(dataFile);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    if (config == null) {
+      config = YamlConfiguration.loadConfiguration(dataFile);
+    }
+    List<Location> temp = new ArrayList<>();
+    int amount = config.getInt("spawnCount");
+    String worldName = config.getString("worldName");
+
+    World world = Bukkit.getWorld(worldName);
+    if (config.getKeys(false).contains("spawns")) {
+      for (int i = 0; i < amount; i++) {
+        double x = config.getDouble("spawns." + i + ".x");
+
+        double y = config.getDouble("spawns." + i + ".y");
+
+        double z = config.getDouble("spawns." + i + ".z");
+
+        temp.add(new Location(world, x, y, z));
+      }
+    }
+
+    return temp;
+
+  }
+
   @Override
   public void onEnable() {
-    Bukkit.getServer().getPluginManager().registerEvents(this, this);
-    GameHandler.setGameName("HUNGERGAMES");
+    Bukkit.getServer().getPluginManager().registerEvents(new ChestListener(), this);
+    Bukkit.getServer().getPluginManager().registerEvents(new GameListener(), this);
 
-    // Maps
+    plugin = this;
 
-    Map.addMap(new Map("Highway"));
-    Map.getRandomMap();
-    GameHandler.loadMap(Map.getCurrentMap().getWorldName());
-  }
+    Arena arena = new Arena("Highway");
+    Game hungerGames = new Game("HungerGames", arena, GameStatus.WAITING, this);
 
-  @EventHandler
-  public void onGameStart(GameStartEvent e) {
-    Map currentMap = Map.getCurrentMap();
+    GameSettings gSettings = hungerGames.getGameSettings(); //Set a variable for accessibility.
+    gSettings.shouldUseTeams(
+        false); //Since Spleef is a solo minigame, we're disabling automatic features related to teams.gSettings.setMaximumPlayers(8);
+    gSettings.setMinimumPlayers(2);
+    gSettings.setAutomaticCountdown(
+        true); //When minimum player requirements are filled, it will start counting down before starting the game.
+    gSettings.setCountdownTime(20); //Set the countdown time in seconds.
+    gSettings.setUsesBungee(true);
+    gSettings.shouldLeavePlayerOnDisconnect(
+        true); //Kick the player from the game when they disconnect from the server. If set to false, you can allow players to resume playing their game, but we don't need this feature here.
+    gSettings.setDisableVanillaDeathMessages(true);
 
-    int count = 0;
-    for (Player p : PlayerTeam.getPlayers()) {
-      Location spawn = new Location(Bukkit.getWorld(currentMap.getWorldName()),
-          currentMap.spawns().get(count).getX(), currentMap.spawns().get(count).getY(),
-          currentMap.spawns().get(count).getZ());
+    ArenaSettings aSettings = arena.getArenaSettings(); //Get a variable for convenience.
+    aSettings.setCanBuild(false);
+    aSettings.setCanDestroy(
+        false); //While this is a Spleef minigame, we don't need players to be able to destroy blocks until the game starts. Properties can be changed at any time.
+    aSettings.setCanPvP(true);
+    aSettings.setAllowPlayerInvincibility(false);
+    aSettings.setAllowDurabilityChange(false);
+    aSettings.setAllowFoodLevelChange(false);
+    aSettings.setAllowMobSpawn(false);
+    aSettings.setAllowBlockDrop(true);
+    aSettings.setAllowItemDrop(true);
+    aSettings.setAllowInventoryChange(true);
+    aSettings.setAllowTimeChange(false);
+    aSettings.setAllowWeatherChange(false);
 
-      Location center = new Location(Bukkit.getWorld(currentMap.getWorldName()), currentMap.getCenter().getX(),
-          currentMap.getCenter().getY(), currentMap.getCenter().getZ());
-      Vector dirBetweenLocations = center.toVector().subtract(spawn.toVector());
-      spawn.setDirection(dirBetweenLocations);
-      p.teleport(spawn);
+    //spleef.addSpawn(mySpawn1);
+    //spleef.addSpawn(mySpawn2); //etc...
 
-      p.getInventory().clear();
-      p.updateInventory();
-
-      p.setGameMode(GameMode.SURVIVAL);
-      count++;
-    }
-  }
-
-  @EventHandler
-  public void onBlockBreak(BlockBreakEvent e){
-
-    //TODO allow blocks being broken and roll back when game ends
-
-    e.setCancelled(true);
-  }
-
-  @EventHandler
-  public void onBlockPlace(BlockPlaceEvent e){
-    e.setCancelled(true);
-  }
-
-  // CHANGE DEPENDING ON THE GAME
-  @EventHandler
-  public void onDamage(EntityDamageEvent e) {
-
-    if (e.getEntity() instanceof Player) {
-
-      Player p = (Player) e.getEntity();
-
-      if(GameHandler.getState() == GameState.WAITING || GameHandler.getState() == GameState.STARTING) {
-        e.setCancelled(true);
-      }
-
-      if (GameHandler.getState() == GameState.INGAME) {
-
-        if (e.getDamage() >= p.getHealth()) {
-
-          e.setCancelled(true);
-
-          //drop items
-          Location loc = p.getLocation();
-          Inventory inv = p.getInventory();
-          for (ItemStack item : inv.getContents()) {
-            if (item != null) {
-              loc.getWorld().dropItemNaturally(loc,
-                  item.clone());
-            }
-          }
-
-          //give coins to person who killed e.getPlayer()
-          if (e instanceof EntityDamageByEntityEvent) {
-            if (((EntityDamageByEntityEvent) e)
-                .getDamager() instanceof Player) {
-
-              String damager = ((EntityDamageByEntityEvent) e)
-                  .getDamager().getName();
-
-              Bukkit.broadcastMessage(
-                  "§b"
-                      + e.getEntity().getName()
-                      + " §ehas been eliminated by §b"
-                      + damager + "§e!");
-
-              Player d = Bukkit.getPlayer(damager);
- 	                                /*if (sgc.getMinigame().killCoins > 1) {
- 	                                    TitleManager.sendActionTitle(d, "§6+"
- 	                                            + sgc.getMinigame().killCoins + " Coins");
- 	                                } else {
- 	                                    TitleManager.sendActionTitle(d, "§6+"
- 	                                            + sgc.getMinigame().killCoins + " Coin");
-
- 	                                }*/
-              CoinHandler.addCoins(d.getUniqueId(), 5);
-
-              //Game.getInstance().core.statsHandler.addKill(d);
-            }else {
-              Bukkit.broadcastMessage(
-                  "§b"
-                      + e.getEntity().getName()
-                      + " §ehas been eliminated!");
-            }
-          }
-
-          // debug spectator
-          PlayerTeam
-              .removePlayer(p);
-          SpectatorTeam.addSpectator(p);
-
- 	                        /*if (sgc.getMinigame().loseCoins > 1) {
- 	                            TitleManager.sendTitle(p, 20, 20, 30, "§cYou died!",
- 	                                    "§eYou received §6" + sgc.getMinigame().loseCoins
- 	                                            + " Coins!");
- 	                            TitleManager.sendActionTitle(p,
- 	                                    "§6+" + sgc.getMinigame().loseCoins + " Coins");
- 	                        } else {
- 	                            TitleManager.sendTitle(p, 20, 20, 30, "§cYou died!",
- 	                                    "§eYou received §6" + sgc.getMinigame().loseCoins
- 	                                            + " Coin!");
- 	                            TitleManager.sendActionTitle(p,
- 	                                    "§6+" + sgc.getMinigame().loseCoins + " Coin");
-
- 	                        }*/
-
-          CoinHandler.addCoins(p.getUniqueId(), 5);
-
-          //Game.getInstance().core.statsHandler.addDeath(p);
-          //Game.getInstance().core.statsHandler.addLoss(p);
-
-          if (PlayerTeam.getPlayers().size() == 1) {
-            GameHandler.finish(PlayerTeam.getPlayers().get(0).getName());
-
- 	                        } else {
-            Bukkit.broadcastMessage(MessageUtils.colorize(MessageUtils.MAIN_COLOR + PlayerTeam.getPlayers()
-                                  .size() + MessageUtils.SECOND_COLOR + " players remain!"));
- 	                        }
-        }
-      }
+    for (Location location : spawns("highway")) {
+      hungerGames.addSpawn(location);
     }
 
+    arena.setLobbySpawn(new Location(Bukkit.getWorld("world"), 1402.5, 15, 21.5)); //Used before the game has started.
+    //arena.setSpectatorSpawn(mySpecSpawn); //Used for spectators
+
+    GameManager.registerGame(hungerGames);
   }
 
-  @EventHandler
-  public void onGameEnd(GameEndEvent e) {
-    for (Player p : Bukkit.getOnlinePlayers()) {
 
-      p.sendMessage("§b-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-");
-      p.sendMessage("§7");
-      MessageUtils.sendCenteredMessage(p, "§e§lGame Over!");
-      p.sendMessage("§7");
-      MessageUtils.sendCenteredMessage(p, "§7§lWinner: §b§o" + e.getWinner());
-      p.sendMessage("§d");
-      p.sendMessage("§7");
-      p.sendMessage("§b-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-");
-    }
 
-    Player winner = Bukkit.getPlayer(e.getWinner());
-
-    //Game.getInstance().core.statsHandler.addWin(winner);
-    //Game.getInstance().core.coinHandler.addCoins(winner.getName(), 20);
-
-    PlayerTeam.removePlayer(winner);
-    SpectatorTeam.addSpectator(winner);
-
-    winner.getInventory().clear();
-    winner.getActivePotionEffects().clear();
-    winner.setExp(0);
-  }
-
-  public static List<Location> chests = new ArrayList<Location>();
-
-  @EventHandler
-  public void onChest(PlayerInteractEvent e) {
-    Player p = e.getPlayer();
-
-    //Bukkit.broadcastMessage("playing:" + (Game.players.isPlaying(p)) + " state:" + (Game.gameHandler.getState() == GameState.INGAME) + " action:" + (e.getAction() == Action.RIGHT_CLICK_BLOCK) + " block:" + (e.getClickedBlock().getType() == Material.CHEST));
-
-    if ((PlayerTeam.isPlaying(p)) && (GameHandler.getState() == GameState.INGAME)
-        && (e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.CHEST)) {
-      Block chest = e.getClickedBlock().getLocation().getBlock();
-      e.setCancelled(false);
-      if ((chest.getState() instanceof Chest)) {
-        Chest c = (Chest) chest.getState();
-        if (!chests.contains(chest.getLocation())) {
-          chests.add(c.getLocation());
-          Inventory i = fillChest();
-
-          c.getInventory().setContents(i.getContents());
-        }
-      }
-    }
-  }
-
-  private Inventory fillChest() {
-    Inventory inv = Bukkit.createInventory(null, 27);
-    for (int i = 0; i < inv.getSize() / 6; i++) {
-
-      //CHANGE LOOTNAMES TO STATIC VARIABLE
-
-      List<String> lootnames = new LinkedList<String>();
-      lootnames.add("BOW");
-      lootnames.add("STONE_SWORD");
-      lootnames.add("WOOD_SWORD");
-      lootnames.add("STONE_AXE");
-
-      lootnames.add("ARROW");
-
-      lootnames.add("LEATHER_HELMET");
-      lootnames.add("LEATHER_CHESTPLATE");
-      lootnames.add("LEATHER_LEGGINGS");
-      lootnames.add("LEATHER_BOOTS");
-      lootnames.add("IRON_HELMET");
-      lootnames.add("IRON_CHESTPLATE");
-      lootnames.add("IRON_LEGGINGS");
-      lootnames.add("IRON_BOOTS");
-      lootnames.add("GOLD_HELMET");
-      lootnames.add("GOLD_CHESTPLATE");
-      lootnames.add("GOLD_LEGGINGS");
-      lootnames.add("GOLD_BOOTS");
-      lootnames.add("CHAINMAIL_HELMET");
-      lootnames.add("CHAINMAIL_CHESTPLATE");
-      lootnames.add("CHAINMAIL_LEGGINGS");
-      lootnames.add("CHAINMAIL_BOOTS");
-
-      lootnames.add("APPLE");
-      lootnames.add("BREAD");
-      lootnames.add("GOLDEN_APPLE");
-      lootnames.add("COOKED_FISH");
-      lootnames.add("COOKED_CHICKEN");
-      lootnames.add("COOKIE");
-      lootnames.add("MELON");
-      lootnames.add("COOKED_BEEF");
-      lootnames.add("COOKED_CHICKEN");
-      lootnames.add("ROTTEN_FLESH");
-      lootnames.add("CARROT_ITEM");
-      lootnames.add("BAKED_POTATO");
-
-      lootnames.add("DIAMOND");
-      lootnames.add("IRON_INGOT");
-      lootnames.add("GOLD_INGOT");
-      lootnames.add("STICK");
-
-      Random r = new Random();
-      int item = r.nextInt(lootnames.size());
-
-      ItemStack is = new ItemStack(Material.getMaterial(((String) lootnames.get(item)).toUpperCase()));
-
-      int amount = r.nextInt(4);
-      String iname = ((String) lootnames.get(item)).toUpperCase();
-      if ((iname.contains("HELMET")) || (iname.contains("CHESTPLATE")) || (iname.contains("LEGGINGS"))
-          || (iname.contains("BOOTS")) || (iname.contains("SWORD")) || (iname.contains("AXE"))
-          || (iname.contains("BOW"))) {
-        is.setAmount(1);
-      } else if (amount == 0) {
-        is.setAmount(amount + 1);
-      } else {
-        is.setAmount(amount);
-      }
-      int slot = r.nextInt(inv.getSize());
-      //Bukkit.broadcastMessage(is.getType().toString());
-      inv.setItem(slot, is);
-    }
-    return inv;
-  }
 
 }
