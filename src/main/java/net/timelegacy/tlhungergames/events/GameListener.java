@@ -13,8 +13,14 @@ import net.timelegacy.tlminigame.event.PlayerJoinGameEvent;
 import net.timelegacy.tlminigame.event.PlayerKillPlayerEvent;
 import net.timelegacy.tlminigame.event.PlayerLeaveGameEvent;
 import net.timelegacy.tlminigame.game.GamePlayer;
+import net.timelegacy.tlminigame.manager.PlayerManager;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 public class GameListener implements Listener {
 
@@ -25,17 +31,48 @@ public class GameListener implements Listener {
 
   @EventHandler
   public void onGameStart(GameStartEvent e) {
-    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, true);
+    e.getGame()
+        .sendMessage("&7&l|&b&m&l                                                             &7&l|", false, true);
     e.getGame().sendMessage("");
     e.getGame().sendMessage("&6&lHUNGER GAMES", false, true);
     e.getGame().sendMessage(
         "&7&lMAP&7: &e" + TLHungerGames.getMapConfig("highway").get("name") + " &7&oby&e " + TLHungerGames
             .getMapConfig("highway").get("author") + " ", false, true);
     e.getGame().sendMessage("");
-    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, true);
+    e.getGame()
+        .sendMessage("&7&l|&b&m&l                                                             &7&l|", false, true);
 
     for (GamePlayer gamePlayer : e.getGame().getPlayers()) {
-      ScoreboardUtils.getCustomScoreboard(gamePlayer.getOnlinePlayer().getUniqueId()).destroy();
+      //TODO make this update on a runnable. Yay!
+
+      CustomScoreboard scoreboard = ScoreboardUtils.getCustomScoreboard(gamePlayer.getOnlinePlayer().getUniqueId());
+      scoreboard.setLine(1, MessageUtils.colorize("&fMap: &b" +
+          e.getGame().getArena().getName()));
+      scoreboard.setLine(2, MessageUtils.colorize("&fSpectators: &d" +
+          e.getGame().getGamePlayerByMode(GamePlayerType.SPECTATOR).size()));
+      scoreboard.setLine(3, MessageUtils.colorize("&fChests Refill In: &c" + "TODO dis ting"));
+      scoreboard.setLine(4, MessageUtils.colorize("&1"));
+      scoreboard.setLine(5, MessageUtils.colorize("&eplay.timelegacy.net"));
+    }
+
+    e.getGame().getArena().getArenaSettings().setCanDestroy(true);
+    e.getGame().getArena().getArenaSettings().setAllowPlayerInvincibility(false);
+  }
+
+  @EventHandler
+  public void blockBreak(BlockBreakEvent e) {
+    if (PlayerManager.getGamePlayer(e.getPlayer()).getGame().getGameStatus() == GameStatus.INGAME) {
+      if (e.getBlock().getType() == Material.ACACIA_LEAVES
+          || e.getBlock().getType() == Material.BIRCH_LEAVES
+          || e.getBlock().getType() == Material.DARK_OAK_LEAVES
+          || e.getBlock().getType() == Material.JUNGLE_LEAVES
+          || e.getBlock().getType() == Material.OAK_LEAVES
+          || e.getBlock().getType() == Material.SPRUCE_LEAVES) {
+
+        e.setCancelled(false);
+      } else {
+        e.setCancelled(true);
+      }
     }
   }
 
@@ -46,9 +83,9 @@ public class GameListener implements Listener {
           .sendMessage(
               MessageUtils.MAIN_COLOR +
                   e.getPlayer().getPlayer().getName()
-                  + "&7 joined the game! &f(&8"
+                  + "&7 joined the game! &f(&7"
                   + e.getGame().getPlayers().size()
-                  + "&7/&8"
+                  + "&8/&7"
                   + e.getGame().getGameSettings().getMaximumPlayers()
                   + "&f)");
       e.getPlayer().getOnlinePlayer().getInventory().clear(); //The player shouldn't have anything in their inventory
@@ -56,11 +93,11 @@ public class GameListener implements Listener {
       CustomScoreboard scoreboard = new CustomScoreboard(e.getPlayer().getOnlinePlayer(),
           MessageUtils.colorize("&c&lHUNGER GAMES"));
       scoreboard.create();
-      scoreboard.setLine(0, MessageUtils.colorize("&9"));
+      scoreboard.setLine(0, MessageUtils.colorize("&0"));
       scoreboard.setLine(1,
           MessageUtils.colorize("&fNeeded Players: &e" + e.getGame().getGameSettings().getMinimumPlayers()));
       scoreboard.setLine(2, MessageUtils.colorize("&fMap: &b" + e.getGame().getArena().getName()));
-      scoreboard.setLine(3, MessageUtils.colorize("&8"));
+      scoreboard.setLine(3, MessageUtils.colorize("&1"));
       scoreboard.setLine(4, MessageUtils.colorize("&eplay.timelegacy.net"));
 
       ScoreboardUtils.saveCustomScoreboard(e.getPlayer().getOnlinePlayer().getUniqueId(), scoreboard);
@@ -83,11 +120,19 @@ public class GameListener implements Listener {
             + " &ehas been eliminated by §b"
             + e.getKiller().getOnlinePlayer().getName() + "&e!");
 
+    MessageUtils.sendMessage(e.getKiller().getOnlinePlayer(), "&eYou have been awarded 10 coins.", false);
     CoinHandler.addCoins(e.getKiller().getOnlinePlayer().getUniqueId(), 10);
-    CoinHandler.addCoins(e.getKilled().getOnlinePlayer().getUniqueId(), 5);
+
+    Location loc = e.getKilled().getOnlinePlayer().getLocation();
+    Inventory inv = e.getKilled().getOnlinePlayer().getInventory();
+    for (ItemStack item : inv.getContents()) {
+      if (item != null) {
+        loc.getWorld().dropItemNaturally(loc,
+            item.clone());
+      }
+    }
 
     e.getGame().setPlayerMode(GamePlayerType.SPECTATOR, e.getKilled());
-    e.getKilled().getOnlinePlayer().teleport(TLHungerGames.spectatorSpawn("highway"));
 
     if (e.getGame().getGamePlayerByMode(GamePlayerType.PLAYER).size() == 1) {
       e.getGame().endGame();

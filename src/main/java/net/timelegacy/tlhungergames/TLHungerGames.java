@@ -24,6 +24,57 @@ public class TLHungerGames extends JavaPlugin implements Listener {
 
   private static TLHungerGames plugin;
 
+  @Override
+  public void onEnable() {
+    Bukkit.getServer().getPluginManager().registerEvents(new ChestListener(), this);
+    Bukkit.getServer().getPluginManager().registerEvents(new GameListener(), this);
+
+    plugin = this;
+
+    //TODO select random map (map voting won't work, but I'll think about it.)
+    Arena arena = new Arena("Highway");
+    Game hungerGames = new Game("HungerGames", arena, GameStatus.WAITING, this);
+
+    GameSettings gSettings = hungerGames.getGameSettings(); //Set a variable for accessibility.
+    gSettings.shouldUseTeams(
+        false); //Since Spleef is a solo minigame, we're disabling automatic features related to teams.gSettings.setMaximumPlayers(8);
+    gSettings.setMinimumPlayers(2);
+    gSettings.setMaximumPlayers(spawns("highway").size());
+    gSettings.setAutomaticCountdown(
+        true); //When minimum player requirements are filled, it will start counting down before starting the game.
+    gSettings.setCountdownTime(20); //Set the countdown time in seconds.
+    gSettings.shouldLeavePlayerOnDisconnect(
+        true); //Kick the player from the game when they disconnect from the server. If set to false, you can allow players to resume playing their game, but we don't need this feature here.
+    gSettings.setResetWorlds(true);
+
+    ArenaSettings aSettings = arena.getArenaSettings(); //Get a variable for convenience.
+    aSettings.setCanBuild(false);
+    aSettings.setCanDestroy(
+        false); //While this is a Spleef minigame, we don't need players to be able to destroy blocks until the game starts. Properties can be changed at any time.
+    aSettings.setCanPvP(true);
+    aSettings.setAllowPlayerInvincibility(true);
+    aSettings.setAllowDurabilityChange(true);
+    aSettings.setAllowFoodLevelChange(true);
+    aSettings.setAllowMobSpawn(false);
+    aSettings.setAllowBlockDrop(true);
+    aSettings.setAllowItemDrop(true);
+    aSettings.setAllowInventoryChange(true);
+    aSettings.setAllowTimeChange(false);
+    aSettings.setAllowWeatherChange(false);
+
+    //TODO make this use multiple maps
+    for (Location location : spawns("highway")) {
+      hungerGames.addSpawn(location);
+    }
+
+    Bukkit.getWorld("world").setPVP(false);
+
+    arena.setLobbySpawn(new Location(Bukkit.getWorld("world"), 1402.5, 15, 21.5)); //Used before the game has started.
+    arena.setSpectatorSpawn(spectatorSpawn("highway")); //Used for spectators
+
+    GameManager.registerGame(hungerGames);
+  }
+
   public static YamlConfiguration getMapConfig(String configName) {
     File dataFile = new File(plugin.getDataFolder(), configName + ".yml");
     YamlConfiguration config = null;
@@ -82,58 +133,5 @@ public class TLHungerGames extends JavaPlugin implements Listener {
       }
     }
     return temp;
-  }
-
-  @Override
-  public void onEnable() {
-    Bukkit.getServer().getPluginManager().registerEvents(new ChestListener(), this);
-    Bukkit.getServer().getPluginManager().registerEvents(new GameListener(), this);
-
-    plugin = this;
-
-    Arena arena = new Arena("Highway");
-    Game hungerGames = new Game("HungerGames", arena, GameStatus.WAITING, this);
-
-    GameSettings gSettings = hungerGames.getGameSettings(); //Set a variable for accessibility.
-    gSettings.shouldUseTeams(
-        false); //Since Spleef is a solo minigame, we're disabling automatic features related to teams.gSettings.setMaximumPlayers(8);
-    gSettings.setMinimumPlayers(2);
-    gSettings.setAutomaticCountdown(
-        true); //When minimum player requirements are filled, it will start counting down before starting the game.
-    gSettings.setCountdownTime(20); //Set the countdown time in seconds.
-    gSettings.setUsesBungee(true);
-    gSettings.shouldLeavePlayerOnDisconnect(
-        true); //Kick the player from the game when they disconnect from the server. If set to false, you can allow players to resume playing their game, but we don't need this feature here.
-    gSettings.setDisableVanillaDeathMessages(true);
-    gSettings.setResetWorlds(true);
-
-    ArenaSettings aSettings = arena.getArenaSettings(); //Get a variable for convenience.
-    aSettings.setCanBuild(false);
-    aSettings.setCanDestroy(
-        false); //While this is a Spleef minigame, we don't need players to be able to destroy blocks until the game starts. Properties can be changed at any time.
-    aSettings.setCanPvP(true);
-    aSettings.setAllowPlayerInvincibility(false);
-    aSettings.setAllowDurabilityChange(true);
-    aSettings.setAllowFoodLevelChange(true);
-    aSettings.setAllowMobSpawn(false);
-    aSettings.setAllowBlockDrop(true);
-    aSettings.setAllowItemDrop(true);
-    aSettings.setAllowInventoryChange(true);
-    aSettings.setAllowTimeChange(false);
-    aSettings.setAllowWeatherChange(false);
-
-    for (Location location : spawns("highway")) {
-      hungerGames.addSpawn(location);
-    }
-
-    Bukkit.getWorld("world").setPVP(false);
-
-    gSettings.setMaximumPlayers(spawns("highway").size());
-
-    arena.setLobbySpawn(new Location(Bukkit.getWorld("world"), 1402.5, 15, 21.5)); //Used before the game has started.
-
-    arena.setSpectatorSpawn(spectatorSpawn("highway")); //Used for spectators
-
-    GameManager.registerGame(hungerGames);
   }
 }
