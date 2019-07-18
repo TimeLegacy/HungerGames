@@ -63,6 +63,7 @@ public class GameListener implements Listener {
     scoreboard.setLine(2, "&fMap: &b" + e.getGame().getGameSettings().getMinimumPlayers());
     scoreboard.setLine(3, "&8");
     scoreboard.setLine(4, "&eplay.timelegacy.net");
+    scoreboard.create();
 
     ScoreboardUtils.saveCustomScoreboard(e.getPlayer().getOnlinePlayer().getUniqueId(), scoreboard);
   }
