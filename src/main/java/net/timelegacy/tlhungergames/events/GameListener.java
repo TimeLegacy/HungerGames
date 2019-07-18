@@ -1,20 +1,48 @@
 package net.timelegacy.tlhungergames.events;
 
+import net.timelegacy.tlcore.datatype.CustomScoreboard;
 import net.timelegacy.tlcore.handler.CoinHandler;
 import net.timelegacy.tlcore.utils.MessageUtils;
+import net.timelegacy.tlcore.utils.ScoreboardUtils;
+import net.timelegacy.tlhungergames.TLHungerGames;
 import net.timelegacy.tlminigame.enums.GamePlayerType;
 import net.timelegacy.tlminigame.enums.GameStatus;
+import net.timelegacy.tlminigame.event.GameEndEvent;
+import net.timelegacy.tlminigame.event.GameStartEvent;
 import net.timelegacy.tlminigame.event.PlayerJoinGameEvent;
 import net.timelegacy.tlminigame.event.PlayerKillPlayerEvent;
+import net.timelegacy.tlminigame.event.PlayerLeaveGameEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 public class GameListener implements Listener {
 
   @EventHandler
+  public void onGameEnd(GameEndEvent e) {
+    ChestListener.chests.clear();
+  }
+
+  @EventHandler
+  public void onGameStart(GameStartEvent e) {
+    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, false);
+    e.getGame().sendMessage("");
+    e.getGame().sendMessage("&6&lHUNGER GAMES", false, true);
+    e.getGame().sendMessage(
+        "&7&lMAP&7: &e" + TLHungerGames.getMapConfig("highway").get("name") + " &7&oby&e " + TLHungerGames
+            .getMapConfig("highway").get("author") + " ", false, true);
+    e.getGame().sendMessage("");
+    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, false);
+
+    /**
+     * &7&l|&b&m&l &7&l| &6&lHUNGER GAMES
+     *
+     * <p>&7&lMAP&7: &ename &7&oby&e player &7&l|&b&m&l &7&l|
+     */
+  }
+
+  @EventHandler
   public void onPlayerJoinGame(PlayerJoinGameEvent e) {
     if (e.getGame().getGameStatus().equals(GameStatus.WAITING)) { //We only want to send messages before the game starts
-      // "ScarabCoder joined the game (1/8)
       e.getGame()
           .sendMessage(
               MessageUtils.MAIN_COLOR +
@@ -25,6 +53,25 @@ public class GameListener implements Listener {
                   + e.getGame().getGameSettings().getMaximumPlayers()
                   + "&f)");
       e.getPlayer().getOnlinePlayer().getInventory().clear(); //The player shouldn't have anything in their inventory
+
+
+    }
+
+    CustomScoreboard scoreboard = new CustomScoreboard(e.getPlayer().getOnlinePlayer(), "&c&lHUNGER GAMES");
+    scoreboard.setLine(0, "&8");
+    scoreboard.setLine(1, "&fNeeded Players: &e" + e.getGame().getGameSettings().getMinimumPlayers());
+    scoreboard.setLine(2, "&fMap: &b" + e.getGame().getGameSettings().getMinimumPlayers());
+    scoreboard.setLine(3, "&8");
+    scoreboard.setLine(4, "&eplay.timelegacy.net");
+
+    ScoreboardUtils.saveCustomScoreboard(e.getPlayer().getOnlinePlayer().getUniqueId(), scoreboard);
+  }
+
+  @EventHandler
+  public void onPlayerLeaveGame(PlayerLeaveGameEvent e) {
+    if (e.getGame().getGameStatus() == GameStatus.INGAME
+        && e.getGame().getGamePlayerByMode(GamePlayerType.PLAYER).size() <= 1) {
+      e.getGame().endGame();
     }
   }
 
@@ -36,11 +83,11 @@ public class GameListener implements Listener {
             + " &ehas been eliminated by §b"
             + e.getKiller().getOnlinePlayer().getName() + "&e!");
 
-    CoinHandler.addCoins(e.getKiller().getOnlinePlayer().getUniqueId(), 5);
-
-    CoinHandler.addCoins(e.getKiller().getOnlinePlayer().getUniqueId(), 5);
+    CoinHandler.addCoins(e.getKiller().getOnlinePlayer().getUniqueId(), 10);
+    CoinHandler.addCoins(e.getKilled().getOnlinePlayer().getUniqueId(), 5);
 
     e.getGame().setPlayerMode(GamePlayerType.SPECTATOR, e.getKilled());
+    e.getKilled().getOnlinePlayer().teleport(TLHungerGames.spectatorSpawn("highway"));
 
     if (e.getGame().getGamePlayerByMode(GamePlayerType.PLAYER).size() == 1) {
       e.getGame().endGame();

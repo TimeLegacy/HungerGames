@@ -18,12 +18,13 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 public class TLHungerGames extends JavaPlugin implements Listener {
 
   private static TLHungerGames plugin;
 
-  public static List<Location> spawns(String configName) {
+  public static YamlConfiguration getMapConfig(String configName) {
     File dataFile = new File(plugin.getDataFolder(), configName + ".yml");
     YamlConfiguration config = null;
 
@@ -44,6 +45,20 @@ public class TLHungerGames extends JavaPlugin implements Listener {
     if (config == null) {
       config = YamlConfiguration.loadConfiguration(dataFile);
     }
+    return config;
+  }
+
+  public static Location spectatorSpawn(String configName) {
+    YamlConfiguration config = getMapConfig(configName);
+    String worldName = config.getString("worldName");
+
+    World world = Bukkit.getWorld(worldName);
+    return new Location(world, config.getDouble("center.x"),
+        config.getDouble("center.y"), config.getDouble("center.z"));
+  }
+
+  public static List<Location> spawns(String configName) {
+    YamlConfiguration config = getMapConfig(configName);
     List<Location> temp = new ArrayList<>();
     int amount = config.getInt("spawnCount");
     String worldName = config.getString("worldName");
@@ -57,12 +72,16 @@ public class TLHungerGames extends JavaPlugin implements Listener {
 
         double z = config.getDouble("spawns." + i + ".z");
 
-        temp.add(new Location(world, x, y, z));
+        Location spawn = new Location(world, x, y, z);
+        Location lookloc = new Location(world, config.getDouble("center.x"),
+            config.getDouble("center.y"), config.getDouble("center.z"));
+        Vector dirBetweenLocations = lookloc.toVector().subtract(spawn.toVector());
+        spawn.setDirection(dirBetweenLocations);
+
+        temp.add(spawn);
       }
     }
-
     return temp;
-
   }
 
   @Override
@@ -86,6 +105,7 @@ public class TLHungerGames extends JavaPlugin implements Listener {
     gSettings.shouldLeavePlayerOnDisconnect(
         true); //Kick the player from the game when they disconnect from the server. If set to false, you can allow players to resume playing their game, but we don't need this feature here.
     gSettings.setDisableVanillaDeathMessages(true);
+    gSettings.setResetWorlds(true);
 
     ArenaSettings aSettings = arena.getArenaSettings(); //Get a variable for convenience.
     aSettings.setCanBuild(false);
@@ -93,8 +113,8 @@ public class TLHungerGames extends JavaPlugin implements Listener {
         false); //While this is a Spleef minigame, we don't need players to be able to destroy blocks until the game starts. Properties can be changed at any time.
     aSettings.setCanPvP(true);
     aSettings.setAllowPlayerInvincibility(false);
-    aSettings.setAllowDurabilityChange(false);
-    aSettings.setAllowFoodLevelChange(false);
+    aSettings.setAllowDurabilityChange(true);
+    aSettings.setAllowFoodLevelChange(true);
     aSettings.setAllowMobSpawn(false);
     aSettings.setAllowBlockDrop(true);
     aSettings.setAllowItemDrop(true);
@@ -102,20 +122,18 @@ public class TLHungerGames extends JavaPlugin implements Listener {
     aSettings.setAllowTimeChange(false);
     aSettings.setAllowWeatherChange(false);
 
-    //spleef.addSpawn(mySpawn1);
-    //spleef.addSpawn(mySpawn2); //etc...
-
     for (Location location : spawns("highway")) {
       hungerGames.addSpawn(location);
     }
 
+    Bukkit.getWorld("world").setPVP(false);
+
+    gSettings.setMaximumPlayers(spawns("highway").size());
+
     arena.setLobbySpawn(new Location(Bukkit.getWorld("world"), 1402.5, 15, 21.5)); //Used before the game has started.
-    //arena.setSpectatorSpawn(mySpecSpawn); //Used for spectators
+
+    arena.setSpectatorSpawn(spectatorSpawn("highway")); //Used for spectators
 
     GameManager.registerGame(hungerGames);
   }
-
-
-
-
 }

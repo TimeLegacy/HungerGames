@@ -29,56 +29,61 @@ public class ChestListener implements Listener {
 
       //CHANGE LOOTNAMES TO STATIC VARIABLE
 
-      List<String> lootnames = new LinkedList<>();
-      lootnames.add("BOW");
-      lootnames.add("STONE_SWORD");
-      lootnames.add("WOOD_SWORD");
-      lootnames.add("STONE_AXE");
+      List<ItemStack> loot = new LinkedList<>();
 
-      lootnames.add("ARROW");
+      //WEAPONS
+      loot.add(new ItemStack(Material.BOW));
+      loot.add(new ItemStack(Material.STONE_SWORD));
+      loot.add(new ItemStack(Material.WOODEN_SWORD));
+      loot.add(new ItemStack(Material.STONE_AXE));
 
-      lootnames.add("LEATHER_HELMET");
-      lootnames.add("LEATHER_CHESTPLATE");
-      lootnames.add("LEATHER_LEGGINGS");
-      lootnames.add("LEATHER_BOOTS");
-      lootnames.add("IRON_HELMET");
-      lootnames.add("IRON_CHESTPLATE");
-      lootnames.add("IRON_LEGGINGS");
-      lootnames.add("IRON_BOOTS");
-      lootnames.add("GOLD_HELMET");
-      lootnames.add("GOLD_CHESTPLATE");
-      lootnames.add("GOLD_LEGGINGS");
-      lootnames.add("GOLD_BOOTS");
-      lootnames.add("CHAINMAIL_HELMET");
-      lootnames.add("CHAINMAIL_CHESTPLATE");
-      lootnames.add("CHAINMAIL_LEGGINGS");
-      lootnames.add("CHAINMAIL_BOOTS");
+      loot.add(new ItemStack(Material.ARROW));
 
-      lootnames.add("APPLE");
-      lootnames.add("BREAD");
-      lootnames.add("GOLDEN_APPLE");
-      lootnames.add("COOKED_FISH");
-      lootnames.add("COOKED_CHICKEN");
-      lootnames.add("COOKIE");
-      lootnames.add("MELON");
-      lootnames.add("COOKED_BEEF");
-      lootnames.add("COOKED_CHICKEN");
-      lootnames.add("ROTTEN_FLESH");
-      lootnames.add("CARROT_ITEM");
-      lootnames.add("BAKED_POTATO");
+      //ARMOR
+      loot.add(new ItemStack(Material.LEATHER_HELMET));
+      loot.add(new ItemStack(Material.LEATHER_CHESTPLATE));
+      loot.add(new ItemStack(Material.LEATHER_LEGGINGS));
+      loot.add(new ItemStack(Material.LEATHER_BOOTS));
 
-      lootnames.add("DIAMOND");
-      lootnames.add("IRON_INGOT");
-      lootnames.add("GOLD_INGOT");
-      lootnames.add("STICK");
+      loot.add(new ItemStack(Material.IRON_HELMET));
+      loot.add(new ItemStack(Material.IRON_CHESTPLATE));
+      loot.add(new ItemStack(Material.IRON_LEGGINGS));
+      loot.add(new ItemStack(Material.IRON_BOOTS));
+
+      loot.add(new ItemStack(Material.CHAINMAIL_HELMET));
+      loot.add(new ItemStack(Material.CHAINMAIL_CHESTPLATE));
+      loot.add(new ItemStack(Material.CHAINMAIL_LEGGINGS));
+      loot.add(new ItemStack(Material.CHAINMAIL_BOOTS));
+
+      loot.add(new ItemStack(Material.GOLDEN_HELMET));
+      loot.add(new ItemStack(Material.GOLDEN_CHESTPLATE));
+      loot.add(new ItemStack(Material.GOLDEN_LEGGINGS));
+      loot.add(new ItemStack(Material.GOLDEN_BOOTS));
+
+      //FOOD
+      loot.add(new ItemStack(Material.APPLE));
+      loot.add(new ItemStack(Material.BREAD));
+      loot.add(new ItemStack(Material.GOLDEN_APPLE));
+      loot.add(new ItemStack(Material.COOKED_BEEF));
+      loot.add(new ItemStack(Material.COOKED_CHICKEN));
+      loot.add(new ItemStack(Material.COOKED_PORKCHOP));
+      loot.add(new ItemStack(Material.COOKIE));
+      loot.add(new ItemStack(Material.MELON_SLICE));
+
+      loot.add(new ItemStack(Material.DIAMOND));
+      loot.add(new ItemStack(Material.IRON_INGOT));
+      loot.add(new ItemStack(Material.GOLD_INGOT));
+      loot.add(new ItemStack(Material.STICK));
+
+      loot.add(new ItemStack(Material.DIRT));
 
       Random r = new Random();
-      int item = r.nextInt(lootnames.size());
+      int item = r.nextInt(loot.size());
 
-      ItemStack is = new ItemStack(Material.getMaterial(((String) lootnames.get(item)).toUpperCase()));
+      ItemStack is = loot.get(item);
 
       int amount = r.nextInt(4);
-      String iname = ((String) lootnames.get(item)).toUpperCase();
+      String iname = is.getType().toString().toUpperCase();
       if ((iname.contains("HELMET")) || (iname.contains("CHESTPLATE")) || (iname.contains("LEGGINGS"))
           || (iname.contains("BOOTS")) || (iname.contains("SWORD")) || (iname.contains("AXE"))
           || (iname.contains("BOW"))) {
