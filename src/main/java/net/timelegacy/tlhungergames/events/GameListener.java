@@ -12,6 +12,7 @@ import net.timelegacy.tlminigame.event.GameStartEvent;
 import net.timelegacy.tlminigame.event.PlayerJoinGameEvent;
 import net.timelegacy.tlminigame.event.PlayerKillPlayerEvent;
 import net.timelegacy.tlminigame.event.PlayerLeaveGameEvent;
+import net.timelegacy.tlminigame.game.GamePlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -24,20 +25,18 @@ public class GameListener implements Listener {
 
   @EventHandler
   public void onGameStart(GameStartEvent e) {
-    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, false);
+    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, true);
     e.getGame().sendMessage("");
     e.getGame().sendMessage("&6&lHUNGER GAMES", false, true);
     e.getGame().sendMessage(
         "&7&lMAP&7: &e" + TLHungerGames.getMapConfig("highway").get("name") + " &7&oby&e " + TLHungerGames
             .getMapConfig("highway").get("author") + " ", false, true);
     e.getGame().sendMessage("");
-    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, false);
+    e.getGame().sendMessage("&7&l|&b&m&l                                    &7&l|", false, true);
 
-    /**
-     * &7&l|&b&m&l &7&l| &6&lHUNGER GAMES
-     *
-     * <p>&7&lMAP&7: &ename &7&oby&e player &7&l|&b&m&l &7&l|
-     */
+    for (GamePlayer gamePlayer : e.getGame().getPlayers()) {
+      ScoreboardUtils.getCustomScoreboard(gamePlayer.getOnlinePlayer().getUniqueId()).destroy();
+    }
   }
 
   @EventHandler
@@ -54,18 +53,18 @@ public class GameListener implements Listener {
                   + "&f)");
       e.getPlayer().getOnlinePlayer().getInventory().clear(); //The player shouldn't have anything in their inventory
 
+      CustomScoreboard scoreboard = new CustomScoreboard(e.getPlayer().getOnlinePlayer(),
+          MessageUtils.colorize("&c&lHUNGER GAMES"));
+      scoreboard.create();
+      scoreboard.setLine(0, MessageUtils.colorize("&9"));
+      scoreboard.setLine(1,
+          MessageUtils.colorize("&fNeeded Players: &e" + e.getGame().getGameSettings().getMinimumPlayers()));
+      scoreboard.setLine(2, MessageUtils.colorize("&fMap: &b" + e.getGame().getArena().getName()));
+      scoreboard.setLine(3, MessageUtils.colorize("&8"));
+      scoreboard.setLine(4, MessageUtils.colorize("&eplay.timelegacy.net"));
 
+      ScoreboardUtils.saveCustomScoreboard(e.getPlayer().getOnlinePlayer().getUniqueId(), scoreboard);
     }
-
-    CustomScoreboard scoreboard = new CustomScoreboard(e.getPlayer().getOnlinePlayer(), "&c&lHUNGER GAMES");
-    scoreboard.setLine(0, "&8");
-    scoreboard.setLine(1, "&fNeeded Players: &e" + e.getGame().getGameSettings().getMinimumPlayers());
-    scoreboard.setLine(2, "&fMap: &b" + e.getGame().getGameSettings().getMinimumPlayers());
-    scoreboard.setLine(3, "&8");
-    scoreboard.setLine(4, "&eplay.timelegacy.net");
-    scoreboard.create();
-
-    ScoreboardUtils.saveCustomScoreboard(e.getPlayer().getOnlinePlayer().getUniqueId(), scoreboard);
   }
 
   @EventHandler
