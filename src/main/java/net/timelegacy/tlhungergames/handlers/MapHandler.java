@@ -8,6 +8,7 @@ import java.util.Random;
 import net.timelegacy.tlhungergames.TLHungerGames;
 import net.timelegacy.tlhungergames.datatype.Map;
 import net.timelegacy.tlminigame.TLMinigame;
+import net.timelegacy.tlminigame.handler.GameHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -37,6 +38,8 @@ public class MapHandler {
     currentMap = m;
 
     TLMinigame.minigameServer.setMap(m.getMapName());
+
+    GameHandler.getGame().setMaxPlayers(m.getSpawns().size());
 
   }
 
