@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import net.timelegacy.tlminigame.enums.GameStatus;
-import net.timelegacy.tlminigame.manager.GameManager;
+import net.timelegacy.tlminigame.enums.GameState;
+import net.timelegacy.tlminigame.handler.GameHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -106,7 +106,7 @@ public class ChestListener implements Listener {
 
     //Bukkit.broadcastMessage("playing:" + (Game.players.isPlaying(p)) + " state:" + (Game.gameHandler.getState() == GameState.INGAME) + " action:" + (e.getAction() == Action.RIGHT_CLICK_BLOCK) + " block:" + (e.getClickedBlock().getType() == Material.CHEST));
 
-    if ((GameManager.getGame("HungerGames").getGameStatus() == GameStatus.INGAME)
+    if ((GameHandler.getGame().getState() == GameState.INGAME)
         && (e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.CHEST)) {
       Block chest = e.getClickedBlock().getLocation().getBlock();
       e.setCancelled(false);
